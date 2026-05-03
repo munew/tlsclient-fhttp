@@ -26,9 +26,9 @@ import (
 
 	tls "github.com/bogdanfinn/utls"
 
-	. "github.com/bogdanfinn/fhttp"
-	"github.com/bogdanfinn/fhttp/cookiejar"
-	"github.com/bogdanfinn/fhttp/httptest"
+	. "github.com/munew/tlsclient-fhttp"
+	"github.com/munew/tlsclient-fhttp/cookiejar"
+	"github.com/munew/tlsclient-fhttp/httptest"
 )
 
 var robotsTxtHandler = HandlerFunc(func(w ResponseWriter, r *Request) {

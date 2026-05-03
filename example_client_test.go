@@ -13,8 +13,8 @@ import (
 
 	tls "github.com/bogdanfinn/utls"
 
-	http "github.com/bogdanfinn/fhttp"
-	"github.com/bogdanfinn/fhttp/http2"
+	http "github.com/munew/tlsclient-fhttp"
+	"github.com/munew/tlsclient-fhttp/http2"
 )
 
 // Basic http test with Header Order + enable push

@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
-	http "github.com/bogdanfinn/fhttp"
-	"github.com/bogdanfinn/fhttp/httptest"
-	"github.com/bogdanfinn/fhttp/internal/testenv"
+	http "github.com/munew/tlsclient-fhttp"
+	"github.com/munew/tlsclient-fhttp/httptest"
+	"github.com/munew/tlsclient-fhttp/internal/testenv"
 )
 
 // This test is a CGI host (testing host.go) that runs its own binary

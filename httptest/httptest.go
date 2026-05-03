@@ -13,7 +13,7 @@ import (
 
 	tls "github.com/bogdanfinn/utls"
 
-	http "github.com/bogdanfinn/fhttp"
+	http "github.com/munew/tlsclient-fhttp"
 )
 
 // NewRequest returns a new incoming server Request, suitable
