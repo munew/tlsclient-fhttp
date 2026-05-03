@@ -1,4 +1,4 @@
-module github.com/bogdanfinn/fhttp
+module github.com/munew/tlsclient-fhttp
 
 go 1.24.1
 
