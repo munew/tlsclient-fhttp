@@ -31,7 +31,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	tls "github.com/bogdanfinn/utls"
 	"io"
 	"io/ioutil"
 	"log"
@@ -49,6 +48,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	tls "github.com/bogdanfinn/utls"
 
 	"github.com/bogdanfinn/fhttp/http2/hpack"
 	"github.com/bogdanfinn/fhttp/httptrace"
@@ -8391,7 +8392,6 @@ var (
 	http2errStopReqBodyWriteAndCancel = errors.New("http2: canceling request")
 )
 
-
 // frameScratchBufferLen returns the length of a buffer to use for
 // outgoing request bodies to read/write to/from.
 //
@@ -8734,7 +8734,7 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 				// fields. We have already checked if any
 				// are error-worthy so just ignore the rest.
 				continue
-			} else if strings.EqualFold(kv.Key, "cookie") {
+			} else if strings.EqualFold(kv.Key, "cookie") && !req.DisableCookieHeaderSplit {
 				// Per 8.1.2.5 To allow for better compression efficiency, the
 				// Cookie header field MAY be split into separate header fields,
 				// each with one or more cookie-pairs.

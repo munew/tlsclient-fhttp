@@ -317,6 +317,10 @@ type Request struct {
 	// redirects.
 	Response *Response
 
+	// DisableCookieHeaderSplit controls whether Cookie values are sent as a single
+	// Cookie header over HTTP/2 instead of being split across multiple Cookie headers.
+	DisableCookieHeaderSplit bool
+
 	// ctx is either the client or server context. It should only
 	// be modified via copying the whole Request using WithContext.
 	// It is unexported to prevent people from using Context wrong
