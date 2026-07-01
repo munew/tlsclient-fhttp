@@ -40,6 +40,54 @@ const HeaderOrderKey = "Header-Order:"
 // Valid fields are :authority, :method, :path, :scheme
 const PHeaderOrderKey = "PHeader-Order:"
 
+// CookieOrderKey is a magic Key that, if present, defines the order in which
+// cookie-pairs are written in the Cookie header. The order of the slice
+// defines how the cookies will be sorted by their name. A cookie whose name is
+// not present in the list is appended at the end of the list, keeping its
+// original relative order. It works just like HeaderOrderKey but for the
+// individual cookies inside the Cookie header.
+const CookieOrderKey = "Cookie-Order:"
+
+// SortCookiePairs splits the given Cookie header values into individual
+// cookie-pairs ("name=value") and orders them following the cookie names in
+// the order slice. Cookie names not present in order are kept in their
+// original relative order at the end of the list. If order is empty the pairs
+// are returned in their original order.
+func SortCookiePairs(values, order []string) []string {
+	var pairs []string
+	for _, line := range values {
+		for _, p := range strings.Split(line, ";") {
+			if p = strings.TrimSpace(p); p != "" {
+				pairs = append(pairs, p)
+			}
+		}
+	}
+
+	if len(order) == 0 || len(pairs) < 2 {
+		return pairs
+	}
+
+	rank := make(map[string]int, len(order))
+	for i, name := range order {
+		rank[name] = i
+	}
+	rankOf := func(pair string) int {
+		name := pair
+		if idx := strings.IndexByte(pair, '='); idx >= 0 {
+			name = pair[:idx]
+		}
+		if r, ok := rank[name]; ok {
+			return r
+		}
+		// Not found in the list, goes at the end.
+		return len(order)
+	}
+	sort.SliceStable(pairs, func(i, j int) bool {
+		return rankOf(pairs[i]) < rankOf(pairs[j])
+	})
+	return pairs
+}
+
 // Add adds the Key, value pair to the header.
 // It appends to any existing Values associated with Key.
 // The Key is case insensitive; it is canonicalized by
@@ -275,14 +323,28 @@ func (h Header) writeSubset(w io.Writer, exclude map[string]bool, trace *httptra
 		mutex.Lock()
 		exclude[HeaderOrderKey] = true
 		exclude[PHeaderOrderKey] = true
+		exclude[CookieOrderKey] = true
 		mutex.Unlock()
 		kvs, sorter = h.SortedKeyValuesBy(order, exclude)
 	} else {
+		if _, ok := h[CookieOrderKey]; ok {
+			if exclude == nil {
+				exclude = make(map[string]bool)
+			}
+			mutex.Lock()
+			exclude[CookieOrderKey] = true
+			mutex.Unlock()
+		}
 		kvs, sorter = h.SortedKeyValues(exclude)
 	}
 
+	cookieOrder := h[CookieOrderKey]
+
 	var formattedVals []string
 	for _, kv := range kvs {
+		if len(cookieOrder) > 0 && strings.EqualFold(kv.Key, "cookie") {
+			kv.Values = []string{strings.Join(SortCookiePairs(kv.Values, cookieOrder), "; ")}
+		}
 		for _, v := range kv.Values {
 			v = headerNewlineToSpace.Replace(v)
 			v = textproto.TrimString(v)
