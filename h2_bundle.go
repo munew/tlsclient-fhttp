@@ -8630,7 +8630,7 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 		if !httpguts.ValidHeaderFieldName(k) {
 			// If the header is magic key, the headers would have been ordered
 			// by this step. It is ok to delete and not raise an error
-			if k == HeaderOrderKey || k == PHeaderOrderKey {
+			if k == HeaderOrderKey || k == PHeaderOrderKey || k == CookieOrderKey {
 				continue
 			}
 
@@ -8722,6 +8722,8 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 			kvs, _ = hdrs.SortedKeyValues(make(map[string]bool))
 		}
 
+		cookieOrder := hdrs[CookieOrderKey]
+
 		for _, kv := range kvs {
 			if strings.EqualFold(kv.Key, "host") {
 				// Host is :authority, already sent.
@@ -8734,26 +8736,18 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 				// fields. We have already checked if any
 				// are error-worthy so just ignore the rest.
 				continue
-			} else if strings.EqualFold(kv.Key, "cookie") && !req.DisableCookieHeaderSplit {
-				// Per 8.1.2.5 To allow for better compression efficiency, the
-				// Cookie header field MAY be split into separate header fields,
-				// each with one or more cookie-pairs.
-				for _, v := range kv.Values {
-					for {
-						p := strings.IndexByte(v, ';')
-						if p < 0 {
-							break
-						}
-						f("cookie", v[:p])
-						p++
-						// strip space after semicolon if any.
-						for p+1 <= len(v) && v[p] == ' ' {
-							p++
-						}
-						v = v[p:]
-					}
-					if len(v) > 0 {
-						f("cookie", v)
+			} else if strings.EqualFold(kv.Key, "cookie") {
+				// Reorder the cookie-pairs following CookieOrderKey, if defined.
+				pairs := SortCookiePairs(kv.Values, cookieOrder)
+				if req.DisableCookieHeaderSplit {
+					// Send all cookie-pairs as a single Cookie header.
+					f("cookie", strings.Join(pairs, "; "))
+				} else {
+					// Per 8.1.2.5 To allow for better compression efficiency, the
+					// Cookie header field MAY be split into separate header fields,
+					// each with one or more cookie-pairs.
+					for _, p := range pairs {
+						f("cookie", p)
 					}
 				}
 
@@ -8803,7 +8797,7 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 	// Header list size is ok. Write the headers.
 	enumerateHeaders(func(name, value string) {
 		// skips over writing magic key headers
-		if name == PHeaderOrderKey || name == HeaderOrderKey {
+		if name == PHeaderOrderKey || name == HeaderOrderKey || name == CookieOrderKey {
 			return
 		}
 

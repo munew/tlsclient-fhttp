@@ -1731,7 +1731,7 @@ func (cc *ClientConn) encodeHeaders(req *http.Request, addGzipHeader bool, trail
 		if !httpguts.ValidHeaderFieldName(k) && k != ":protocol" {
 			// If the header is magic key, the headers would have been ordered
 			// by this step. It is ok to delete and not raise an error
-			if k == http.HeaderOrderKey || k == http.PHeaderOrderKey {
+			if k == http.HeaderOrderKey || k == http.PHeaderOrderKey || k == http.CookieOrderKey {
 				continue
 			}
 
